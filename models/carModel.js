@@ -16,7 +16,6 @@ export default class CarModel {
     }
 
     async createCar() {
-        // Load car
         this.gltfLoader.load('./car.glb', (gltf) => {
             console.log(gltf);
             this.scene.add(gltf.scene);
@@ -25,13 +24,22 @@ export default class CarModel {
                 child.position.y -= 1;
                 this.carObjects[child.name] = child;
                 // keep wheels separated
-                if (child.name === "WHEELS"){
+                if (child.name === "WHEELS") {
                     child.children.forEach(c => {
                         this.wheels[c.name] = c;
                     })
                 }
+                child.traverse(object => {
+                    if (object.type !== 'Group'){
+                        object.castShadow = true;
+                    }
+                    if (object.type === 'SpotLight'){
+                        object.shadow.bias -=0.002;
+                    }
+                })
             })
         });
+        // Load car
 
         // Await for car to load
         await this.gltfLoader.loadAsync('./car.glb', () => {});
