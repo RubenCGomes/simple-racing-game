@@ -120,20 +120,20 @@ function animate() {
 
 
     if (keyD) {
-        if (!turnFlag) {
+        if (!turnFlag || turnLeft) {
             car.wheels["WHEEL_LF"].rotation.z += (Math.PI / 32);
             car.wheels["WHEEL_RF"].rotation.z += (Math.PI / 32);
             turnRight = turnFlag = true;
             turnLeft = false;
         }
     } else if (keyA) {
-        if (!turnFlag) {
+        if (!turnFlag || turnRight) {
             car.wheels["WHEEL_LF"].rotation.z -= (Math.PI / 32);
             car.wheels["WHEEL_RF"].rotation.z -= (Math.PI / 32);
             turnLeft = turnFlag = true;
             turnRight = false;
         }
-    } else if (!keyD && !keyA) {
+    } else {
         // reset wheels based on turn
         if (turnLeft) {
             car.wheels["WHEEL_LF"].rotation.z += (Math.PI / 32);
@@ -167,17 +167,17 @@ function animate() {
 
     if (turnLeft){
         values.forEach(function(value){
-            value.rotation.z -= (Math.PI / 32) * (0.8 * car.carSpeed);
+            if (car.carSpeed !== 0) value.rotation.z -= (Math.PI / 256) * (0.2 * (car.carSpeed - 2)^2 + 0.2);
         })
-        camera.rotation.z -= (Math.PI / 32) * (0.8 * car.carSpeed);
+        camera.rotation.z -= (Math.PI / 256) * (0.2 * (car.carSpeed - 2)^2 + 0.2);
     } else if (turnRight){
         values.forEach(function(value){
-            value.rotation.z += (Math.PI / 32) * (0.8 * car.carSpeed);
+            if (car.carSpeed !== 0) value.rotation.z += (Math.PI / 256) * (0.2 * (car.carSpeed - 2)^2 + 0.2);
         })
-        camera.rotation.z += (Math.PI / 32) * (0.8 * car.carSpeed);
+        camera.rotation.z += (Math.PI / 256) * (0.2 * (car.carSpeed - 2)^2 + 0.2);
     } else {
         values.forEach(function(value){
-            // value.rotation.z = 0;
+            // if (car.carSpeed != 0) value.rotation.z = 0;
         })
     }
 
