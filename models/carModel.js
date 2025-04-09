@@ -2,17 +2,9 @@ import * as THREE from "three";
 
 export default class CarModel {
     carSpeed = 0;
-    carObjects = {};
-    carLights = {
-        headlights: [
-            new THREE.SpotLight(0xffffff, 2, 20),
-            new THREE.SpotLight(0xffffff, 2, 20),
-        ]
-    };
-    helpers = [
-        new THREE.CameraHelper(this.carLights.headlights[0].shadow.camera),
-        new THREE.CameraHelper(this.carLights.headlights[1].shadow.camera),
-    ]
+    carObjects = {}; carBase;
+    wheels = {};
+
     scene; gltfLoader;
     maxFspeed = 2; maxBspeed = -0.4;
 
@@ -28,31 +20,21 @@ export default class CarModel {
         this.gltfLoader.load('./car.glb', (gltf) => {
             console.log(gltf);
             this.scene.add(gltf.scene);
-            gltf.scene.children.forEach(child => {
+            this.carBase = gltf.scene.children[0];
+            gltf.scene.children[0].children.forEach(child => {
                 child.position.y -= 1;
                 this.carObjects[child.name] = child;
+                // keep wheels separated
+                if (child.name === "WHEELS"){
+                    child.children.forEach(c => {
+                        this.wheels[c.name] = c;
+                    })
+                }
             })
         });
 
         // Await for car to load
         await this.gltfLoader.loadAsync('./car.glb', () => {});
-
-        this.carLights.headlights[0].position.set(this.carObjects["FRONT_LIGHTS"].children[0].position.x,
-            -this.carObjects["FRONT_LIGHTS"].children[0].position.z - 1,
-            -this.carObjects["FRONT_LIGHTS"].children[0].position.y)
-
-        this.carLights.headlights[1].position.set(this.carObjects["FRONT_LIGHTS"].children[1].position.x,
-            -this.carObjects["FRONT_LIGHTS"].children[1].position.z - 1,
-            -this.carObjects["FRONT_LIGHTS"].children[1].position.y)
-
-        this.carLights.headlights.forEach(light => {
-            light.castShadow = true;
-            // light.target = (0, 0, 0)
-            light.rotateZ(Math.PI);
-            this.scene.add(light);
-        });
-        this.helpers.forEach(helper => {this.scene.add(helper)});
-
         console.log(this.carObjects);
     }
 

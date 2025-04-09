@@ -117,26 +117,26 @@ function animate() {
 
     if (keyD) {
         if (!turnFlag) {
-            carObjects["WHEEL_LF"].rotation.z += (Math.PI / 32);
-            carObjects["WHEEL_RF"].rotation.z += (Math.PI / 32);
+            car.wheels["WHEEL_LF"].rotation.z += (Math.PI / 32);
+            car.wheels["WHEEL_RF"].rotation.z += (Math.PI / 32);
             turnRight = turnFlag = true;
             turnLeft = false;
         }
     } else if (keyA) {
         if (!turnFlag) {
-            carObjects["WHEEL_LF"].rotation.z -= (Math.PI / 32);
-            carObjects["WHEEL_RF"].rotation.z -= (Math.PI / 32);
+            car.wheels["WHEEL_LF"].rotation.z -= (Math.PI / 32);
+            car.wheels["WHEEL_RF"].rotation.z -= (Math.PI / 32);
             turnLeft = turnFlag = true;
             turnRight = false;
         }
     } else if (!keyD && !keyA) {
         // reset wheels based on turn
         if (turnLeft) {
-            carObjects["WHEEL_LF"].rotation.z += (Math.PI / 32);
-            carObjects["WHEEL_RF"].rotation.z += (Math.PI / 32);
+            car.wheels["WHEEL_LF"].rotation.z += (Math.PI / 32);
+            car.wheels["WHEEL_RF"].rotation.z += (Math.PI / 32);
         } else if (turnRight) {
-            carObjects["WHEEL_LF"].rotation.z -= (Math.PI / 32);
-            carObjects["WHEEL_RF"].rotation.z -= (Math.PI / 32);
+            car.wheels["WHEEL_LF"].rotation.z -= (Math.PI / 32);
+            car.wheels["WHEEL_RF"].rotation.z -= (Math.PI / 32);
         }
         turnFlag = turnRight = turnLeft = false;
     }
@@ -163,14 +163,14 @@ function animate() {
 
     if (turnLeft){
         values.forEach(function(value){
-            value.rotation.z -= (Math.PI / 32) * car.carSpeed;
+            value.rotation.z -= (Math.PI / 32) * (0.8 * car.carSpeed);
         })
-        camera.rotation.z -= (Math.PI / 32) * car.carSpeed;
+        camera.rotation.z -= (Math.PI / 32) * (0.8 * car.carSpeed);
     } else if (turnRight){
         values.forEach(function(value){
-            value.rotation.z += (Math.PI / 32) * car.carSpeed;
+            value.rotation.z += (Math.PI / 32) * (0.8 * car.carSpeed);
         })
-        camera.rotation.z += (Math.PI / 32) * car.carSpeed;
+        camera.rotation.z += (Math.PI / 32) * (0.8 * car.carSpeed);
     } else {
         values.forEach(function(value){
             // value.rotation.z = 0;
