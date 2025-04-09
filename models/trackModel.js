@@ -21,20 +21,20 @@ export class TrackModel {
             gltf.scene.position.set(0, -5, 0);
 
             gltf.scene.traverse((child) => {
-                if (child.isMesh) {
-                    // Convert MeshStandardMaterial to MeshPhongMaterial
-                    if (child.material.name === "Asphalt") {
-                        child.material = textures.asphalt
-                    } else if (child.material.name === "Material.001") {
-                        child.material = textures.pitTexture;
-                    } else {
-                        child.material = new THREE.MeshPhongMaterial({
-                            color: child.material.color,
-                            specular: new THREE.Color(0x111111), // Adjust specular reflection
-                            shininess: 50 // Adjust glossiness
-                        });
-                    }
-                }
+                // if (child.isMesh) {
+                //     // Convert MeshStandardMaterial to MeshPhongMaterial
+                //     if (child.material.name === "Asphalt") {
+                //         child.material = textures.asphalt
+                //     } else if (child.material.name === "Material.001") {
+                //         child.material = textures.pitTexture;
+                //     } else {
+                //         child.material = new THREE.MeshPhongMaterial({
+                //             color: child.material.color,
+                //             specular: new THREE.Color(0x111111), // Adjust specular reflection
+                //             shininess: 50 // Adjust glossiness
+                //         });
+                //     }
+                // }
             });
 
             this.scene.add(gltf.scene);

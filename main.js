@@ -84,6 +84,10 @@ function lighting(){
     // dirLight.shadow.camera.top = d;
     // dirLight.shadow.camera.bottom = - d;
     //
+
+    // fix for shadow artifacts on blender models
+    // dirLight.shadow.bias -=0.002;
+
     // // values for shadow quality
     // dirLight.shadow.mapSize.x = 4096;
     // dirLight.shadow.mapSize.y = 4096;
