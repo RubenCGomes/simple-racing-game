@@ -86,7 +86,7 @@ function lighting(){
 
 
     // fix for shadow artifacts on blender models
-    dirLight.shadow.bias -=0.002;
+    dirLight.shadow.bias -=0.003;
 
     // values for shadow quality
     dirLight.shadow.mapSize.x = 4096;
