@@ -121,45 +121,45 @@ function animate() {
 
     if (keyD) {
         if (!turnFlag || turnLeft) {
-            car.wheels["WHEEL_LF"].rotation.z += (Math.PI / 32);
-            car.wheels["WHEEL_RF"].rotation.z += (Math.PI / 32);
+            car.wheels["WHEEL_LF"].rotation.z += (Math.PI / 8);
+            car.wheels["WHEEL_RF"].rotation.z += (Math.PI / 8);
             turnRight = turnFlag = true;
             turnLeft = false;
         }
     } else if (keyA) {
         if (!turnFlag || turnRight) {
-            car.wheels["WHEEL_LF"].rotation.z -= (Math.PI / 32);
-            car.wheels["WHEEL_RF"].rotation.z -= (Math.PI / 32);
+            car.wheels["WHEEL_LF"].rotation.z -= (Math.PI / 8);
+            car.wheels["WHEEL_RF"].rotation.z -= (Math.PI / 8);
             turnLeft = turnFlag = true;
             turnRight = false;
         }
     } else {
         // reset wheels based on turn
         if (turnLeft) {
-            car.wheels["WHEEL_LF"].rotation.z += (Math.PI / 32);
-            car.wheels["WHEEL_RF"].rotation.z += (Math.PI / 32);
+            car.wheels["WHEEL_LF"].rotation.z += (Math.PI / 8);
+            car.wheels["WHEEL_RF"].rotation.z += (Math.PI / 8);
         } else if (turnRight) {
-            car.wheels["WHEEL_LF"].rotation.z -= (Math.PI / 32);
-            car.wheels["WHEEL_RF"].rotation.z -= (Math.PI / 32);
+            car.wheels["WHEEL_LF"].rotation.z -= (Math.PI / 8);
+            car.wheels["WHEEL_RF"].rotation.z -= (Math.PI / 8);
         }
         turnFlag = turnRight = turnLeft = false;
     }
 
-    if (keyW) {
-        if (car.carSpeed > 0){
-            car.accelerate();
-        } else if (car.carSpeed === 0){
-            car.engage_forward();
-        } else {
-            car.brake();
-        }
-    } else if (keyS) {
+    if (keyS) {
         if (car.carSpeed > 0){
             car.brake();
         } else if (car.carSpeed === 0) {
             car.engage_backward();
         } else {
             car.reverse();
+        }
+    } else if (keyW) {
+        if (car.carSpeed > 0){
+            car.accelerate();
+        } else if (car.carSpeed === 0){
+            car.engage_forward();
+        } else {
+            car.brake();
         }
     } else {
         car.deccelerate();
@@ -175,10 +175,6 @@ function animate() {
             if (car.carSpeed !== 0) value.rotation.z += (Math.PI / 256) * (0.2 * (car.carSpeed - 2)^2 + 0.2);
         })
         camera.rotation.z += (Math.PI / 256) * (0.2 * (car.carSpeed - 2)^2 + 0.2);
-    } else {
-        values.forEach(function(value){
-            // if (car.carSpeed != 0) value.rotation.z = 0;
-        })
     }
 
     camera.lookAt(car.carObjects["polymsh"].position);
