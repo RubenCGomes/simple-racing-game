@@ -70,31 +70,31 @@ function lighting(){
     hemiLight.position.set(0, 50, 0);
     scene.add(hemiLight);
 
-    // const dirLight = new THREE.DirectionalLight(0xffffff, 3);
-    // dirLight.position.set(50, 200, 50);
-    // scene.add(dirLight);
-    // dirLight.castShadow = true;
-    // dirLight.shadowMapWidth = dirLight.shadowMapHeight = 1024 * 2;
-    // // dirLight.shadowCameraVisible = true;
-    //
-    // const d = 1000;
-    //
-    // dirLight.shadow.camera.left = - d;
-    // dirLight.shadow.camera.right = d;
-    // dirLight.shadow.camera.top = d;
-    // dirLight.shadow.camera.bottom = - d;
-    //
+    const dirLight = new THREE.DirectionalLight(0xffffff, 3);
+    dirLight.position.set(-50, 50, 50);
+    scene.add(dirLight);
+    dirLight.castShadow = true;
+    dirLight.shadowMapWidth = dirLight.shadowMapHeight = 1024 * 2;
+    // dirLight.shadowCameraVisible = true;
+
+    const d = 1000;
+
+    dirLight.shadow.camera.left = - d;
+    dirLight.shadow.camera.right = d;
+    dirLight.shadow.camera.top = d;
+    dirLight.shadow.camera.bottom = - d;
+
 
     // fix for shadow artifacts on blender models
-    // dirLight.shadow.bias -=0.002;
+    dirLight.shadow.bias -=0.002;
 
-    // // values for shadow quality
-    // dirLight.shadow.mapSize.x = 4096;
-    // dirLight.shadow.mapSize.y = 4096;
-    return hemiLight/*, dirLight*/;
+    // values for shadow quality
+    dirLight.shadow.mapSize.x = 4096;
+    dirLight.shadow.mapSize.y = 4096;
+    return hemiLight, dirLight;
 }
 
-hemiLight/*,dirLight*/ = lighting();
+hemiLight,dirLight = lighting();
 
 // const helper = new THREE.CameraHelper(dirLight.shadow.camera);
 // scene.add(helper);
