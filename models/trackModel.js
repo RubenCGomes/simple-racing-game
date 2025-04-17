@@ -1,8 +1,6 @@
 import * as THREE from "three";
 import ProjectTextures from "../textures/textures.js";
 
-const textures = new ProjectTextures();
-
 export class TrackModel {
 
     trackObjects = {};
@@ -16,26 +14,8 @@ export class TrackModel {
 
     async loadTrack() {
         // Load track
-        this.gltfLoader.load('./track.gltf', (gltf) => {
+        this.gltfLoader.load('./track.glb', (gltf) => {
             console.log(gltf);
-            gltf.scene.position.set(0, -5, 0);
-
-            gltf.scene.traverse((child) => {
-                // if (child.isMesh) {
-                //     // Convert MeshStandardMaterial to MeshPhongMaterial
-                //     if (child.material.name === "Asphalt") {
-                //         child.material = textures.asphalt
-                //     } else if (child.material.name === "Material.001") {
-                //         child.material = textures.pitTexture;
-                //     } else {
-                //         child.material = new THREE.MeshPhongMaterial({
-                //             color: child.material.color,
-                //             specular: new THREE.Color(0x111111), // Adjust specular reflection
-                //             shininess: 50 // Adjust glossiness
-                //         });
-                //     }
-                // }
-            });
 
             this.scene.add(gltf.scene);
             console.log(gltf.scene.children);
@@ -45,12 +25,11 @@ export class TrackModel {
         });
 
         // Await for track to load
-        await this.gltfLoader.loadAsync('./track.gltf', (gltf) => {});
+        await this.gltfLoader.loadAsync('./track.glb', (gltf) => {});
         console.log(this.trackObjects)
 
 
-        // trackObjects[1].material = new THREE.MeshPhongMaterial({color: 0x00ff00, side: THREE.DoubleSide});
-
+        // TODO: make this traversable
         const values = Object.values(this.trackObjects);
         values.forEach(trackObject => {
             trackObject.castShadow = true;

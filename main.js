@@ -1,7 +1,6 @@
 import * as THREE from 'three';
-import {OrbitControls} from "https://cdn.jsdelivr.net/npm/three@0.174/examples/jsm/controls/OrbitControls.js";
 import {RGBELoader} from 'https://threejs.org/examples/jsm/loaders/RGBELoader.js';
-
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 // local imports
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -11,7 +10,7 @@ import CarModel from "./models/carModel.js";
 import {Vector3} from "three";
 
 /* --- GLOBAL VARIABLES --- */
-let scene, cameraList = [];
+let scene;
 let track, car;         // objects
 
 // lighting
@@ -51,16 +50,24 @@ const gltfLoader = new GLTFLoader();
 track = await new TrackModel(scene, gltfLoader);
 car = await new CarModel(scene, gltfLoader);
 
-await gltfLoader.loadAsync('./track.gltf', (gltf) => {});
+await gltfLoader.loadAsync('./track.glb', (gltf) => {});
 await gltfLoader.loadAsync('./car.glb', (gltf) => {});
 
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 camera.position.set(0, 3, -5);
 
-const cameraOffset = new THREE.Vector3(0, 3, -5);
+// define camera offset
+const cameraOffset = new THREE.Vector3(0, 3, -6);
 
-// controls
+// Add OrbitControls
 const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0, 0, 0); // Initial target (will be updated to follow the car)
+controls.enableDamping = true; // Smooth camera movement
+controls.dampingFactor = 0.05;
+controls.enablePan = false; // Disable panning
+controls.minDistance = 5; // Minimum zoom distance
+controls.maxDistance = 50; // Maximum zoom distance
+controls.update();
 
 // Lighting
 function lighting(){
@@ -71,13 +78,13 @@ function lighting(){
     scene.add(hemiLight);
 
     const dirLight = new THREE.DirectionalLight(0xffffff, 3);
-    dirLight.position.set(-50, 50, 50);
+    dirLight.position.set(-10, 10, 10);
     scene.add(dirLight);
     dirLight.castShadow = true;
     dirLight.shadowMapWidth = dirLight.shadowMapHeight = 1024 * 2;
     // dirLight.shadowCameraVisible = true;
 
-    const d = 1000;
+    const d = 100;
 
     dirLight.shadow.camera.left = - d;
     dirLight.shadow.camera.right = d;
@@ -103,14 +110,16 @@ const carObjects = car.carObjects;
 const values = Object.values(carObjects);
 let turnLeft = false, turnRight = false, turnFlag = false;
 
+// Default camera rotation angle
+let cameraRotationAngle = -Math.PI / 2;
+
 animate();
 
 // Animation loop
 function animate() {
-    setTimeout( function() {
+    setTimeout(function () {
         requestAnimationFrame(animate);
     }, 1000 / 60);
-    controls.update();
     renderer.render(scene, camera);
 
     // animate light
@@ -167,20 +176,55 @@ function animate() {
 
     if (turnLeft){
         values.forEach(function(value){
-            if (car.carSpeed !== 0) value.rotation.z -= (Math.PI / 256) * (0.2 * (car.carSpeed - 2)^2 + 0.2);
+            if (car.carSpeed !== 0){
+                value.rotation.z -= (Math.PI / 256) * (0.2 * (car.carSpeed - 2)^2 + 0.2);
+                // car.carCameras[0].rotation.z += (Math.PI / 256) * (0.2 * (car.carSpeed - 2)^2 + 0.2)
+            }
         })
-        camera.rotation.z -= (Math.PI / 256) * (0.2 * (car.carSpeed - 2)^2 + 0.2);
     } else if (turnRight){
         values.forEach(function(value){
             if (car.carSpeed !== 0) value.rotation.z += (Math.PI / 256) * (0.2 * (car.carSpeed - 2)^2 + 0.2);
         })
-        camera.rotation.z += (Math.PI / 256) * (0.2 * (car.carSpeed - 2)^2 + 0.2);
     }
 
-    camera.lookAt(car.carObjects["polymsh"].position);
-    // camera.position.set(car.carObjects["polymsh"].position.x,
-    //                     car.carObjects["polymsh"].position.y,
-    //                     car.carObjects["polymsh"].position.z).add(cameraOffset);
+    // Update camera position to rotate around the car
+    const carPosition = car.carObjects["polymsh"].position;
+
+    // Swap Y and Z axes for the car position
+    const swappedCarPosition = new THREE.Vector3(carPosition.x, carPosition.z, carPosition.y);
+
+    // Increment camera rotation angle only when the car is turning
+    if (turnRight) {
+        cameraRotationAngle += (Math.PI / 256) * (0.2 * (car.carSpeed - 2)^2 + 0.2);
+    } else if (turnLeft) {
+        cameraRotationAngle -= (Math.PI / 256) * (0.2 * (car.carSpeed - 2)^2 + 0.2);
+    }
+
+    const radius = 5; // Distance from the car
+    const offsetX = radius * Math.cos(cameraRotationAngle);
+    const offsetZ = radius * Math.sin(cameraRotationAngle);
+    const targetCameraPosition = new THREE.Vector3(
+        swappedCarPosition.x + offsetX,
+        swappedCarPosition.y + cameraOffset.y,
+        swappedCarPosition.z + offsetZ
+    );
+
+    // Smoothly interpolate the camera's position
+    camera.position.lerp(targetCameraPosition, 0.3);
+
+    // Make the camera look at the car
+    camera.lookAt(swappedCarPosition);
+
+    // Rotate each wheel according to the speed
+    Object.values(car.wheels).forEach(
+        wheel => {
+            wheel.rotation.x += car.carSpeed * 1.5;
+        }
+    )
+
+    // Update camera target to follow the car
+    controls.target.copy(swappedCarPosition);
+    controls.update();
 
     values.forEach(part => {
         if (part.name === "FRONT_LIGHTS") part.translateY(-car.carSpeed)
@@ -199,7 +243,6 @@ window.addEventListener('resize', () => {
 
 document.addEventListener('keydown', onDocumentKeyDown, false);
 document.addEventListener('keyup', onDocumentKeyUp, false);
-
 
 function onDocumentKeyDown(event) {
     switch (event.keyCode) {
@@ -233,21 +276,4 @@ function onDocumentKeyUp(event) {
             keyW = false;
             break;
     }
-}
-
-function rotateAboutPoint(obj, point, axis, theta, pointIsWorld = false){
-
-    if(pointIsWorld){
-        obj.parent.localToWorld(obj.position); // compensate for world coordinate
-    }
-
-    obj.position.sub(point); // remove the offset
-    obj.position.applyAxisAngle(axis, theta); // rotate the POSITION
-    obj.position.add(point); // re-add the offset
-
-    if(pointIsWorld){
-        obj.parent.worldToLocal(obj.position); // undo world coordinates compensation
-    }
-
-    obj.rotateOnAxis(axis, theta); // rotate the OBJECT
 }

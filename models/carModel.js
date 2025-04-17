@@ -2,6 +2,7 @@ import * as THREE from "three";
 
 export default class CarModel {
     carSpeed = 0;
+    carCameras = [];
     carObjects = {}; carBase;
     wheels = {};
 
@@ -22,10 +23,11 @@ export default class CarModel {
         this.gltfLoader.load('./car.glb', (gltf) => {
             console.log(gltf);
             this.scene.add(gltf.scene);
-            this.carBase = gltf.scene.children[0];
-            gltf.scene.children[0].children.forEach(child => {
+            this.carBase = gltf.scene.children[1];
+            gltf.scene.children[1].children.forEach(child => {
                 child.position.y -= 1;
                 this.carObjects[child.name] = child;
+                child.receiveShadow = true;
                 // keep wheels separated
                 if (child.name === "WHEELS") {
                     child.children.forEach(c => {
@@ -49,6 +51,9 @@ export default class CarModel {
                     }
                 })
             })
+
+            this.carCameras = gltf.cameras;
+
         });
         // Load car
 
