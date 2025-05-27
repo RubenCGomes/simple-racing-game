@@ -21,11 +21,10 @@ export default class CarModel {
 
     async createCar() {
         this.gltfLoader.load('./car.glb', (gltf) => {
-            console.log(gltf);
             this.scene.add(gltf.scene);
             this.carBase = gltf.scene.children[1];
             gltf.scene.children[1].children.forEach(child => {
-                child.position.y -= 1;
+                // child.position.y -= 1;
                 this.carObjects[child.name] = child;
                 child.receiveShadow = true;
                 // keep wheels separated
@@ -41,18 +40,19 @@ export default class CarModel {
                     }
                     if (object.type === 'SpotLight'){
                         this.carLights[object.name] = object;
-                        object.shadow.bias -=0.002;
-                        object.intensity = 300;
+                        // object.shadow.bias -=0.002;
+                        object.intensity = 1200;
                     }
                     if (object.type === 'PointLight'){
                         this.carLights[object.name] = object;
-                        object.shadow.bias -=0.002;
+                        // object.shadow.bias -=0.002;
                         object.intensity = 0;
                     }
                 })
             })
 
             this.carCameras = gltf.cameras;
+            console.log(this.carCameras);
 
         });
         // Load car
@@ -65,25 +65,29 @@ export default class CarModel {
 
     accelerate() {
         this.carSpeed = this.carSpeed + 0.001 < this.maxFspeed ? this.carSpeed + 0.001 : this.carSpeed;
-        this.carLights["L_BRAKE"].intensity = 0;
-        this.carLights["R_BRAKE"].intensity = 0;
+        this.carLights["L_BRAKE"].intensity = 1;
+        this.carLights["R_BRAKE"].intensity = 1;
     }
 
     reverse() {
         this.carSpeed = this.carSpeed - 0.001 >= this.maxBspeed ? this.carSpeed - 0.001 : this.carSpeed;
-        this.carLights["L_BRAKE"].intensity = 0;
-        this.carLights["R_BRAKE"].intensity = 0;
+        this.carLights["L_BRAKE"].intensity = 1;
+        this.carLights["R_BRAKE"].intensity = 1;
     }
 
     deccelerate() {
         this.carSpeed = this.carSpeed !== 0 ? this.carSpeed * 0.99 : this.carSpeed;
         this.round_speed();
-        this.carLights["L_BRAKE"].intensity = 0;
-        this.carLights["R_BRAKE"].intensity = 0;
+        this.carLights["L_BRAKE"].intensity = 1;
+        this.carLights["R_BRAKE"].intensity = 1;
     }
 
     brake() {
-        this.carSpeed = this.carSpeed !== 0 ? (this.carSpeed > 0 ? this.carSpeed - 0.004 : this.carSpeed + 0.004) : this.carSpeed;
+        if (this.carSpeed > 0.6){
+            this.carSpeed = this.carSpeed !== 0 ? (this.carSpeed > 0 ? this.carSpeed - 0.008 : this.carSpeed + 0.008) : this.carSpeed;
+        } else {
+            this.carSpeed = this.carSpeed !== 0 ? (this.carSpeed > 0 ? this.carSpeed - 0.004 : this.carSpeed + 0.004) : this.carSpeed;
+        }
         this.round_speed();
         this.carLights["L_BRAKE"].intensity = 5;
         this.carLights["R_BRAKE"].intensity = 5;
