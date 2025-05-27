@@ -1,0 +1,4 @@
+# exclude all blend files
+.idea/*
+*.blend*
+node_modules/*
