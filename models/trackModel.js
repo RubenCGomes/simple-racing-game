@@ -2,14 +2,16 @@ import * as THREE from "three";
 import { CatmullRomCurve3 } from "three";
 import * as BufferGeometryUtils from 'three/addons/utils/BufferGeometryUtils.js';
 import ProjectTextures from "../textures/textures.js";
-import {SpotlightModel} from "./spotlightModel.js";
 
 export class TrackModel {
-    trackObjects = {};
     scene; gltfLoader;
     curve;
     checkpoints = [];
     checkpointGroup;
+    groundPlane; // reference to ground plane mesh
+    envGroup;     // reference to environment group
+    envPlane;     // plane under buildings
+    textures;     // store loaded textures
 
     constructor(scene, gltfLoader) {
         this.scene = scene;
@@ -20,12 +22,15 @@ export class TrackModel {
     async loadTrack() {
         // Create a green plane (ground)
         const textures = new ProjectTextures();
-        const planeGeometry = new THREE.PlaneGeometry(800, 800);
+        this.textures = textures;
+        // init with dummy small plane; will resize after env spawn
+        const planeGeometry = new THREE.PlaneGeometry(1, 1);
         const planeMaterial = textures.grass;
         const plane = new THREE.Mesh(planeGeometry, planeMaterial);
         plane.rotation.x = Math.PI / 2;
         plane.receiveShadow = true;
         this.scene.add(plane);
+        this.groundPlane = plane;
 
         // Generate random track
         this.generateRandomTrack();
@@ -34,7 +39,7 @@ export class TrackModel {
     generateRandomTrack() {
         const trackGroup = new THREE.Group();
         const segmentWidth = 10;
-        const numCurvePoints = 1600;
+        const numCurvePoints = 10000;
         const turns = 18;
 
         const curvePoints = []; // Points for the Catmull-Rom curve
@@ -157,5 +162,145 @@ export class TrackModel {
         this.checkpointGroup = checkpointGroup;
 
         this.scene.add(trackGroup);
+
+        // Add point lights alongside the track edges
+        const lightGroup = new THREE.Group();
+        const numTrackLights = 10;
+        for (let i = 0; i < numTrackLights; i++) {
+            const t = i / numTrackLights;
+            const pos = this.curve.getPointAt(t);
+            const tangent = this.curve.getTangentAt(t);
+            const perp = new THREE.Vector3().crossVectors(tangent, new THREE.Vector3(0, 1, 0)).normalize();
+            const offsetDist = 10;
+            // place light on both sides
+            [1, -1].forEach(side => {
+                const light = new THREE.PointLight(0xffffff, 30, 5);
+                light.castShadow = false;
+                light.shadow.mapSize.width = 128;
+                light.shadow.mapSize.height = 128;
+                light.position.copy(pos.clone().add(perp.clone().multiplyScalar(offsetDist * side)).setY(2));
+                lightGroup.add(light);
+
+                // add simple lamp-post pole
+                const poleHeight = 3;
+                const poleGeom = new THREE.CylinderGeometry(0.1, 0.1, poleHeight);
+                const poleMat = new THREE.MeshPhongMaterial({ color: 0x333333 });
+                const pole = new THREE.Mesh(poleGeom, poleMat);
+                pole.position.copy(pos.clone().add(perp.clone().multiplyScalar(offsetDist * side)));
+                pole.position.y = poleHeight / 2;
+                pole.castShadow = true;
+                pole.receiveShadow = true;
+                lightGroup.add(pole);
+            });
+        }
+        this.scene.add(lightGroup);
+
+        const exclusionZone = boundingBox.clone().expandByScalar(margin);
+        // spawn env and store group
+        this.envGroup = this.addEnvironment(exclusionZone, 60, 100);
+        // adjust ground plane to fit env
+        this.adjustGroundPlane();
+        this.createEnvironmentPlane();
+    }
+
+    // Spawn buildings and trees randomly outside the track exclusion zone
+    addEnvironment(exclusionZone, numBuildings = 60, numTrees = 100) {
+        const envGroup = new THREE.Group();
+        // Buildings: equal numbers on each side
+        const half = Math.floor(numBuildings / 2);
+        ['+', '-'].forEach((dir, idx) => {
+            const side = idx === 0 ? 1 : -1;
+            const count = idx === 0 ? half : (numBuildings - half);
+            for (let i = 0; i < count; i++) {
+                // sample until point is outside track exclusion zone
+                let x, z, attempts = 0;
+                do {
+                    const t = Math.random();
+                    const basePos = this.curve.getPointAt(t);
+                    const tangent = this.curve.getTangentAt(t);
+                    const perp = new THREE.Vector3().crossVectors(tangent, new THREE.Vector3(0, 1, 0)).normalize();
+                    const offsetDist = THREE.MathUtils.randFloat(15, 40) * side;
+                    x = basePos.x + perp.x * offsetDist;
+                    z = basePos.z + perp.z * offsetDist;
+                    attempts++;
+                } while (exclusionZone.containsPoint(new THREE.Vector3(x, 0, z)) && attempts < 20);
+                // now place building at (x,z)
+                const width = THREE.MathUtils.randFloat(5, 20);
+                const depth = THREE.MathUtils.randFloat(5, 20);
+                const height = THREE.MathUtils.randFloat(10, 50);
+                const geom = new THREE.BoxGeometry(width, height, depth);
+                const mat = new THREE.MeshPhongMaterial({ color: 0x888888 });
+                const building = new THREE.Mesh(geom, mat);
+                building.position.set(x, height / 2, z);
+                building.castShadow = true;
+                building.receiveShadow = true;
+                envGroup.add(building);
+            }
+        });
+        // Trees: spawn near the track with random offset to both sides
+        for (let i = 0; i < numTrees; i++) {
+            let x, z, attempts = 0;
+            do {
+                const t = Math.random();
+                const basePos = this.curve.getPointAt(t);
+                const tangent = this.curve.getTangentAt(t);
+                const perp = new THREE.Vector3().crossVectors(tangent, new THREE.Vector3(0, 1, 0)).normalize();
+                const side = Math.random() < 0.5 ? 1 : -1;
+                const offsetDist = THREE.MathUtils.randFloat(12, 50) * side;
+                x = basePos.x + perp.x * offsetDist;
+                z = basePos.z + perp.z * offsetDist;
+                attempts++;
+            } while (exclusionZone.containsPoint(new THREE.Vector3(x, 0, z)) && attempts < 50);
+            // Trunk
+            const trunkHeight = THREE.MathUtils.randFloat(2, 5);
+            const trunkGeom = new THREE.CylinderGeometry(0.2, 0.2, trunkHeight);
+            const trunkMat = new THREE.MeshPhongMaterial({ color: 0x553322 });
+            const trunk = new THREE.Mesh(trunkGeom, trunkMat);
+            trunk.position.set(x, trunkHeight / 2, z);
+            // Foliage
+            const foliageHeight = THREE.MathUtils.randFloat(3, 8);
+            const foliageGeom = new THREE.ConeGeometry(1.5, foliageHeight, 8);
+            const foliageMat = new THREE.MeshPhongMaterial({ color: 0x228822 });
+            const foliage = new THREE.Mesh(foliageGeom, foliageMat);
+            foliage.position.set(x, trunkHeight + foliageHeight / 2, z);
+            envGroup.add(trunk);
+            envGroup.add(foliage);
+        }
+        this.scene.add(envGroup);
+        return envGroup;
+    }
+
+    // Resize and position groundPlane to encompass all env objects
+    adjustGroundPlane(margin = 20) {
+        if (!this.groundPlane || !this.envGroup) return;
+        const box = new THREE.Box3().setFromObject(this.envGroup);
+        const size = new THREE.Vector3(); box.getSize(size);
+        const center = new THREE.Vector3(); box.getCenter(center);
+        // update geometry
+        this.groundPlane.geometry.dispose();
+        this.groundPlane.geometry = new THREE.PlaneGeometry(size.x + margin, size.z + margin);
+        // reposition and keep rotation
+        this.groundPlane.position.set(center.x, 0, center.z);
+    }
+
+    // Create a darker plane under all buildings/trees at y = -1
+    createEnvironmentPlane(margin = 10) {
+        if (!this.envGroup) return;
+        const box = new THREE.Box3().setFromObject(this.envGroup);
+        const size = new THREE.Vector3(); box.getSize(size);
+        const center = new THREE.Vector3(); box.getCenter(center);
+        // dispose old if exists
+        if (this.envPlane) {
+            this.envPlane.geometry.dispose();
+            this.scene.remove(this.envPlane);
+        }
+        const geom = new THREE.PlaneGeometry(size.x + margin, size.z + margin);
+        const mat = new THREE.MeshPhongMaterial({ color: 0x555555, side: THREE.DoubleSide });
+        const plane = new THREE.Mesh(geom, mat);
+        plane.rotation.x = Math.PI / 2;
+        plane.position.set(center.x, -1, center.z);
+        plane.receiveShadow = true;
+        this.scene.add(plane);
+        this.envPlane = plane;
     }
 }

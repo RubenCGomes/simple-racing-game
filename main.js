@@ -77,7 +77,7 @@ const hoodCameraOffset = new THREE.Vector3(0.6, 0.7, -1);
 let hoodCameraLookAtOffset = new THREE.Vector3(0, 100, 0);
 
 // define camera offset
-const cameraOffset = new THREE.Vector3(0, 3, -6);
+const cameraOffset = new THREE.Vector3(0, 2, -4);
 
 // Add OrbitControls
 const controls = new OrbitControls(camera, renderer.domElement);
@@ -507,5 +507,4 @@ function onDocumentKeyUp(event) {
             break;
     }
 }
-
 
