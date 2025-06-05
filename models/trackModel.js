@@ -206,6 +206,7 @@ export class TrackModel {
     // Spawn buildings and trees randomly outside the track exclusion zone
     addEnvironment(exclusionZone, numBuildings = 60, numTrees = 100) {
         const envGroup = new THREE.Group();
+        const maxAttempts = 50;
         // Prepare arrays for merged geometries
         const buildingGeoms = [];
         const trunkGeoms = [];
@@ -216,8 +217,8 @@ export class TrackModel {
             const side = idx === 0 ? 1 : -1;
             const count = idx === 0 ? half : (numBuildings - half);
             for (let i = 0; i < count; i++) {
-                let x, z, attempts = 0;
-                do {
+                let x, z, attempts = 0, inside = true;
+                while (attempts < maxAttempts) {
                     const t = Math.random();
                     const basePos = this.curve.getPointAt(t);
                     const tangent = this.curve.getTangentAt(t);
@@ -225,8 +226,11 @@ export class TrackModel {
                     const offsetDist = THREE.MathUtils.randFloat(15, 40) * side;
                     x = basePos.x + perp.x * offsetDist;
                     z = basePos.z + perp.z * offsetDist;
+                    inside = exclusionZone.containsPoint(new THREE.Vector3(x, 0, z));
+                    if (!inside) break;
                     attempts++;
-                } while (exclusionZone.containsPoint(new THREE.Vector3(x, 0, z)) && attempts < 20);
+                }
+                if (inside) { i--; continue; }
                 // collect building geometry transformed in world
                 const width = THREE.MathUtils.randFloat(5, 20);
                 const depth = THREE.MathUtils.randFloat(5, 20);
