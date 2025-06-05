@@ -32,6 +32,20 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 document.body.appendChild(renderer.domElement);
 
+const SHADOW_DISTANCE = 100;
+// Toggle mesh shadows based on distance to camera
+function updateMeshShadows(camera) {
+    scene.traverse(obj => {
+        if (obj.isMesh) {
+            const pos = new THREE.Vector3();
+            obj.getWorldPosition(pos);
+            const dist = pos.distanceTo(camera.position);
+            const enabled = dist <= SHADOW_DISTANCE;
+            obj.castShadow = enabled;
+            obj.receiveShadow = enabled;
+        }
+    });
+}
 
 // Scene setup
 function startScene() {
@@ -236,6 +250,7 @@ function animate() {
         camera.lookAt(swappedCarPosition);
         controls.target.copy(swappedCarPosition);
         controls.update();
+        updateMeshShadows(camera);
         renderer.render(scene, camera);
     } else {
         // --- Hood camera logic ---
@@ -254,6 +269,7 @@ function animate() {
             const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(carWorldQuat).normalize();
             const lookAtWorld = hoodCameraLookAtOffset.clone().applyQuaternion(carWorldQuat).add(carWorldPos);
             hoodCamera.lookAt(lookAtWorld);
+            updateMeshShadows(hoodCamera);
             renderer.render(scene, hoodCamera);
 
             if (car.carSpeed !== 0) {

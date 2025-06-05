@@ -206,13 +206,16 @@ export class TrackModel {
     // Spawn buildings and trees randomly outside the track exclusion zone
     addEnvironment(exclusionZone, numBuildings = 60, numTrees = 100) {
         const envGroup = new THREE.Group();
+        // Prepare arrays for merged geometries
+        const buildingGeoms = [];
+        const trunkGeoms = [];
+        const foliageGeoms = [];
         // Buildings: equal numbers on each side
         const half = Math.floor(numBuildings / 2);
         ['+', '-'].forEach((dir, idx) => {
             const side = idx === 0 ? 1 : -1;
             const count = idx === 0 ? half : (numBuildings - half);
             for (let i = 0; i < count; i++) {
-                // sample until point is outside track exclusion zone
                 let x, z, attempts = 0;
                 do {
                     const t = Math.random();
@@ -224,19 +227,24 @@ export class TrackModel {
                     z = basePos.z + perp.z * offsetDist;
                     attempts++;
                 } while (exclusionZone.containsPoint(new THREE.Vector3(x, 0, z)) && attempts < 20);
-                // now place building at (x,z)
+                // collect building geometry transformed in world
                 const width = THREE.MathUtils.randFloat(5, 20);
                 const depth = THREE.MathUtils.randFloat(5, 20);
                 const height = THREE.MathUtils.randFloat(10, 50);
                 const geom = new THREE.BoxGeometry(width, height, depth);
-                const mat = new THREE.MeshPhongMaterial({ color: 0x888888 });
-                const building = new THREE.Mesh(geom, mat);
-                building.position.set(x, height / 2, z);
-                building.castShadow = true;
-                building.receiveShadow = true;
-                envGroup.add(building);
+                // apply world transform
+                geom.applyMatrix4(new THREE.Matrix4().makeTranslation(x, height / 2, z));
+                buildingGeoms.push(geom);
             }
         });
+        // Merge and add building mesh
+        if (buildingGeoms.length) {
+            const mergedB = BufferGeometryUtils.mergeGeometries(buildingGeoms);
+            const matB = new THREE.MeshPhongMaterial({ color: 0x888888 });
+            const meshB = new THREE.Mesh(mergedB, matB);
+            meshB.castShadow = meshB.receiveShadow = true;
+            envGroup.add(meshB);
+        }
         // Trees: spawn near the track with random offset to both sides
         for (let i = 0; i < numTrees; i++) {
             let x, z, attempts = 0;
@@ -251,20 +259,31 @@ export class TrackModel {
                 z = basePos.z + perp.z * offsetDist;
                 attempts++;
             } while (exclusionZone.containsPoint(new THREE.Vector3(x, 0, z)) && attempts < 50);
-            // Trunk
             const trunkHeight = THREE.MathUtils.randFloat(2, 5);
-            const trunkGeom = new THREE.CylinderGeometry(0.2, 0.2, trunkHeight);
-            const trunkMat = new THREE.MeshPhongMaterial({ color: 0x553322 });
-            const trunk = new THREE.Mesh(trunkGeom, trunkMat);
-            trunk.position.set(x, trunkHeight / 2, z);
-            // Foliage
+            // collect trunk geom
+            const tGeom = new THREE.CylinderGeometry(0.2, 0.2, trunkHeight);
+            tGeom.applyMatrix4(new THREE.Matrix4().makeTranslation(x, trunkHeight / 2, z));
+            trunkGeoms.push(tGeom);
             const foliageHeight = THREE.MathUtils.randFloat(3, 8);
-            const foliageGeom = new THREE.ConeGeometry(1.5, foliageHeight, 8);
-            const foliageMat = new THREE.MeshPhongMaterial({ color: 0x228822 });
-            const foliage = new THREE.Mesh(foliageGeom, foliageMat);
-            foliage.position.set(x, trunkHeight + foliageHeight / 2, z);
-            envGroup.add(trunk);
-            envGroup.add(foliage);
+            const fGeom = new THREE.ConeGeometry(1.5, foliageHeight, 8);
+            fGeom.applyMatrix4(new THREE.Matrix4().makeTranslation(x, trunkHeight + foliageHeight / 2, z));
+            foliageGeoms.push(fGeom);
+        }
+        // Merge and add trunk mesh
+        if (trunkGeoms.length) {
+            const mergedT = BufferGeometryUtils.mergeGeometries(trunkGeoms);
+            const matT = new THREE.MeshPhongMaterial({ color: 0x553322 });
+            const meshT = new THREE.Mesh(mergedT, matT);
+            meshT.castShadow = meshT.receiveShadow = true;
+            envGroup.add(meshT);
+        }
+        // Merge and add foliage mesh
+        if (foliageGeoms.length) {
+            const mergedF = BufferGeometryUtils.mergeGeometries(foliageGeoms);
+            const matF = new THREE.MeshPhongMaterial({ color: 0x228822 });
+            const meshF = new THREE.Mesh(mergedF, matF);
+            meshF.castShadow = meshF.receiveShadow = true;
+            envGroup.add(meshF);
         }
         this.scene.add(envGroup);
         return envGroup;

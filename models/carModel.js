@@ -40,7 +40,7 @@ export default class CarModel {
                     }
                     if (object.type === 'SpotLight'){
                         this.carLights[object.name] = object;
-                        object.shadow.bias -=0.001;
+                        object.shadow.bias -=0.002;
                         object.intensity = 1200;
                     }
                     if (object.type === 'PointLight'){
