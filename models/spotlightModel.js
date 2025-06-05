@@ -31,9 +31,9 @@ export class SpotlightModel {
                     if (object.type === 'SpotLight'){
                         this.spotlightObjects[object.name] = object;
                         object.shadow.bias -=0.001;
-                        object.intensity = 300;
-                        object.shadow.mapSize.width = 1024;
-                        object.shadow.mapSize.height = 1024;
+                        object.intensity = 100;
+                        object.shadow.mapSize.width = 256;
+                        object.shadow.mapSize.height = 256;
                     }
                 })
             });
